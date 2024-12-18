@@ -1,8 +1,9 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const platformSchema = new mongoose.Schema({
   name: { type: String, required: true, unique: true },
   credentials: { type: Object, required: true }, // API key or OAuth token
 });
 
-module.exports = mongoose.model('Platform', platformSchema);
+const Platform = mongoose.model('Platform', platformSchema);
+export default Platform; // Use default export

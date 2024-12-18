@@ -1,6 +1,6 @@
-const express = require('express');
-const axios = require('axios'); // For GitHub account validation
-const Employee = require('../models/Employee');
+import express from 'express';
+import axios from 'axios'; // For GitHub account validation
+import Employee from '../models/Employee.js';
 
 const router = express.Router();
 
@@ -85,7 +85,6 @@ router.get('/', async (req, res) => {
   }
 });
 
-
 // Update an employee
 router.put('/:id', async (req, res) => {
   try {
@@ -137,4 +136,4 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

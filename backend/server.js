@@ -1,10 +1,10 @@
-const express = require('express');
-const dotenv = require('dotenv');
-const cors = require('cors');
-const connectDB = require('./config/db');
-const employeeRoutes = require('./routes/employeeRoutes');
-const platformRoutes = require('./routes/platforms'); 
-const accountRoutes = require('./routes/accounts'); 
+import express from 'express';
+import dotenv from 'dotenv';
+import cors from 'cors';
+import { connectDB } from './config/db.js';
+import employeeRoutes from './routes/employeeRoutes.js';
+import platformRoutes from './routes/platforms.js';
+import accountRoutes from './routes/accounts.js'; // ES Module import
 
 dotenv.config();
 
@@ -17,8 +17,8 @@ connectDB();
 
 // Routes
 app.use('/api/employees', employeeRoutes);
-app.use('/api/platforms', platformRoutes); 
-app.use('/api/accounts', accountRoutes);  
+app.use('/api/platforms', platformRoutes);
+app.use('/api/accounts', accountRoutes);
 
 const PORT = process.env.PORT || 5000;
 

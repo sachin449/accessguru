@@ -1,5 +1,5 @@
-const express = require('express');
-const Platform = require('../models/Platform');
+import express from 'express';
+import Platform from '../models/Platform.js';
 
 const router = express.Router();
 
@@ -35,4 +35,4 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;
