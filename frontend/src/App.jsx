@@ -1,10 +1,10 @@
 import React from "react";
-import Dashboard from "./pages/Dashboard";
-
+import EmployeeDashboard from "./pages/EmployeeDashboard";
+import ManageCollaborator from "./pages/ManageCollaborator";
 function App() {
   return (
     <div className="min-h-screen bg-gray-100">
-      <Dashboard />
+      <EmployeeDashboard />
     </div>
   );
 }

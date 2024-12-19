@@ -7,17 +7,36 @@ const AddUserModal = ({ onClose, onAdd }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+
+    // Prepare platforms as an array of objects
+    const platformsArray = platforms.split(",").map((platform) => {
+      const [platformName, accountId] = platform.trim().split(":");
+      return {
+        platformName: platformName.trim(),
+        accountId: accountId ? accountId.trim() : "", // Handle cases where accountId is not provided
+        status: "active", // Default status
+      };
+    });
+
+    // Call onAdd with structured data
     onAdd({
       name,
       email,
-      platforms: platforms.split(",").map((platform) => platform.trim()),
+      platforms: platformsArray,
     });
+
+    // Reset form fields
+    setName("");
+    setEmail("");
+    setPlatforms("");
+    
+    // Close modal after submission
     onClose();
   };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-      <div className="bg-white p-6 rounded shadow-lg w-96">
+      <div className="bg-white p-6 rounded shadow-lg w-full max-w-md">
         <h2 className="text-xl font-bold mb-4">Add New User</h2>
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
@@ -41,13 +60,13 @@ const AddUserModal = ({ onClose, onAdd }) => {
             />
           </div>
           <div className="mb-4">
-            <label className="block text-gray-700">Platforms</label>
+            <label className="block text-gray-700">Platforms (format: Platform:AccountID)</label>
             <input
               type="text"
               value={platforms}
               onChange={(e) => setPlatforms(e.target.value)}
               className="w-full border border-gray-300 px-4 py-2 rounded"
-              placeholder="e.g., GitHub, AWS"
+              placeholder="e.g., GitHub:johndoe, AWS:tej"
               required
             />
           </div>
