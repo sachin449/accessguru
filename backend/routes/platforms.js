@@ -3,7 +3,7 @@ import Platform from '../models/Platform.js';
 
 const router = express.Router();
 
-// Add a new platform
+
 router.post('/', async (req, res) => {
   try {
     const { name, apiEndpoint, authMethod, credentials } = req.body;
@@ -15,7 +15,6 @@ router.post('/', async (req, res) => {
   }
 });
 
-// Get all platforms
 router.get('/', async (req, res) => {
   try {
     const platforms = await Platform.find();
@@ -25,7 +24,6 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Delete a platform
 router.delete('/:id', async (req, res) => {
   try {
     await Platform.findByIdAndDelete(req.params.id);

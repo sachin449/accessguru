@@ -4,7 +4,7 @@ import cors from 'cors';
 import { connectDB } from './config/db.js';
 import employeeRoutes from './routes/employeeRoutes.js';
 import platformRoutes from './routes/platforms.js';
-import accountRoutes from './routes/accounts.js'; // ES Module import
+import accountRoutes from './routes/accounts.js'; 
 
 dotenv.config();
 
@@ -12,10 +12,9 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
-// Connect to MongoDB
+
 connectDB();
 
-// Routes
 app.use('/api/employees', employeeRoutes);
 app.use('/api/platforms', platformRoutes);
 app.use('/api/accounts', accountRoutes);

@@ -1,6 +1,6 @@
 import { Octokit } from '@octokit/rest';
 import express from 'express';
-import Platform from '../models/Platform.js'; // Ensure correct path and `.js` extension
+import Platform from '../models/Platform.js'; 
 
 const router = express.Router();
 
@@ -19,7 +19,7 @@ router.post('/add-collaborator', async (req, res) => {
       owner: repoOwner,
       repo: repoName,
       username: accountId,
-      permission: 'push', // push, pull, or admin permissions
+      permission: 'push', 
     });
 
     res.status(200).json({ message: `GitHub user ${accountId} added to ${repoName}.` });
@@ -30,7 +30,7 @@ router.post('/add-collaborator', async (req, res) => {
   }
 });
 
-// Remove Collaborator
+
 router.delete('/remove-collaborator', async (req, res) => {
   try {
     const { accountId, repoOwner, repoName, token } = req.body;
@@ -55,4 +55,4 @@ router.delete('/remove-collaborator', async (req, res) => {
   }
 });
 
-export default router; // Use ES Module export
+export default router; 

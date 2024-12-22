@@ -1,18 +1,16 @@
 import React, { useEffect, useState } from "react";
 
 const ManageCollaborator = () => {
-  const [repos, setRepos] = useState([]); // State for repositories
-  const [selectedRepo, setSelectedRepo] = useState(""); // State for selected repository
-  const [username, setUsername] = useState(""); // State for collaborator username
-  const [message, setMessage] = useState(""); // State for messages
+  const [repos, setRepos] = useState([]); 
+  const [selectedRepo, setSelectedRepo] = useState(""); 
+  const [username, setUsername] = useState(""); 
+  const [message, setMessage] = useState(""); 
 
-  // Hardcoded GitHub Personal Access Token for development
-  const token = "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"; // Replace with your actual PAT
-  const orgName = "live-octa-cat"; // Replace with your organization name
+  const token = "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"; 
+  const orgName = "live-octa-cat"; 
 
-  // Fetch repositories from a specific GitHub organization
   const fetchRepositories = async () => {
-    console.log("GitHub Token:", token); // Log to verify token is accessible
+    console.log("GitHub Token:", token); 
 
     try {
       const response = await fetch(`https://api.github.com/orgs/${orgName}/repos`, {
@@ -26,15 +24,15 @@ const ManageCollaborator = () => {
       }
 
       const data = await response.json();
-      console.log("Fetched Repositories:", data); // Log fetched data for debugging
-      setRepos(data); // Set fetched repositories in state
+      console.log("Fetched Repositories:", data); 
+      setRepos(data); 
     } catch (error) {
       console.error("Error fetching repositories:", error);
     }
   };
 
   useEffect(() => {
-    fetchRepositories(); // Fetch repositories on component mount
+    fetchRepositories(); 
   }, []);
 
   // Handle adding collaborator
@@ -69,7 +67,6 @@ const ManageCollaborator = () => {
     }
   };
 
-  // Handle removing collaborator
   const handleRemoveCollaborator = async () => {
     if (!selectedRepo || !username) {
       alert("Please select a repository and enter a username.");
@@ -116,7 +113,7 @@ const ManageCollaborator = () => {
           {repos.length > 0 ? (
             repos.map((repo) => (
               <option key={repo.id} value={repo.full_name}>
-                {repo.full_name} {/* Displaying full name for clarity */}
+                {repo.full_name} 
               </option>
             ))
           ) : (
