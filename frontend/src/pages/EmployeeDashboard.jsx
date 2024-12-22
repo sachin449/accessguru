@@ -1,11 +1,48 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { getEmployees, deleteEmployee, addEmployee } from "../services/employeeService";
 import AddUserModal from "./AddUserModal";
 import config from "../config";
-import { FiPlus, FiSearch, FiGithub, FiTrash2, FiUserPlus, FiUserMinus, FiLoader } from "react-icons/fi";
+import {
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Button,
+  TextField,
+  MenuItem,
+  Typography,
+  Box,
+  Chip,
+  IconButton,
+  Container,
+  Alert,
+  CircularProgress,
+  Tooltip,
+  Fade,
+  TablePagination,
+  Snackbar,
+  Card,
+  Stack,
+  Divider,
+  LinearProgress
+} from '@mui/material';
+import {
+  Add as AddIcon,
+  Delete as DeleteIcon,
+  GitHub as GitHubIcon,
+  PersonAdd as PersonAddIcon,
+  PersonRemove as PersonRemoveIcon,
+  Search as SearchIcon,
+  Refresh as RefreshIcon
+} from '@mui/icons-material';
 
 const EmployeeDashboard = () => {
   const { token, orgName } = config.github;
+  
+  // State management
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -15,20 +52,25 @@ const EmployeeDashboard = () => {
   const [selectedEmployeeId, setSelectedEmployeeId] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
-
-  const fetchEmployees = async () => {
+  const fetchEmployees = useCallback(async () => {
     try {
       const data = await getEmployees();
-      setEmployees(data);
-      setLoading(false);
+      if (Array.isArray(data)) {
+        setEmployees(data);
+      } else {
+        throw new Error('Invalid employee data format');
+      }
     } catch (error) {
       setError("Failed to load employees. Please try again later.");
-      setLoading(false);
+      console.error('Fetch employees error:', error);
     }
-  };
+  }, []);
 
-  const fetchRepositories = async () => {
+  const fetchRepositories = useCallback(async () => {
     try {
       const response = await fetch(`https://api.github.com/orgs/${orgName}/repos`, {
         headers: {
@@ -36,34 +78,49 @@ const EmployeeDashboard = () => {
         },
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to fetch repositories");
-      }
+      if (!response.ok) throw new Error("Failed to fetch repositories");
 
       const data = await response.json();
       setRepos(data);
     } catch (error) {
-      console.error("Error fetching repositories:", error);
       setError("Failed to fetch repositories. Please check your connection.");
+      console.error('Fetch repositories error:', error);
     }
-  };
+  }, [orgName, token]);
 
   useEffect(() => {
-    Promise.all([fetchEmployees(), fetchRepositories()]);
+    const initializeData = async () => {
+      setLoading(true);
+      try {
+        await Promise.all([fetchEmployees(), fetchRepositories()]);
+      } catch (error) {
+        console.error('Initialization error:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initializeData();
+  }, [fetchEmployees, fetchRepositories]);
+
+  const showNotification = useCallback((message, severity = 'success') => {
+    setSnackbar({ open: true, message, severity });
   }, []);
 
   const handleDelete = async (id) => {
-    if (window.confirm("Are you sure you want to delete this employee?")) {
-      setIsProcessing(true);
-      try {
-        await deleteEmployee(id);
-        setEmployees(employees.filter((employee) => employee._id !== id));
-        setSelectedEmployeeId("");
-      } catch (error) {
-        setError("Failed to delete employee. Please try again.");
-      } finally {
-        setIsProcessing(false);
-      }
+    if (!window.confirm("Are you sure you want to delete this employee?")) return;
+    
+    setIsProcessing(true);
+    try {
+      await deleteEmployee(id);
+      setEmployees(prevEmployees => prevEmployees.filter(employee => employee._id !== id));
+      setSelectedEmployeeId("");
+      showNotification('Employee deleted successfully');
+    } catch (error) {
+      setError("Failed to delete employee. Please try again.");
+      console.error('Delete error:', error);
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -75,7 +132,13 @@ const EmployeeDashboard = () => {
 
     setIsProcessing(true);
     const selectedEmployee = employees.find(emp => emp._id === selectedEmployeeId);
-    const githubUsername = selectedEmployee.platforms[0]?.accountId;
+    const githubUsername = selectedEmployee?.platforms[0]?.accountId;
+
+    if (!githubUsername) {
+      setError("Selected employee has no GitHub account configured.");
+      setIsProcessing(false);
+      return;
+    }
 
     try {
       const response = await fetch(
@@ -90,18 +153,65 @@ const EmployeeDashboard = () => {
       );
 
       if (response.status === 201 || response.status === 204) {
-        const message = action === 'add' 
-          ? `Successfully added ${githubUsername} as a collaborator!`
-          : `Successfully removed ${githubUsername} as a collaborator!`;
-        alert(message);
+        showNotification(
+          action === 'add' 
+            ? `Successfully added ${githubUsername} as a collaborator`
+            : `Successfully removed ${githubUsername} as a collaborator`
+        );
       } else {
         throw new Error(`Failed with status: ${response.status}`);
       }
     } catch (error) {
       setError(`Failed to ${action} collaborator. Please try again.`);
+      console.error('Collaborator action error:', error);
     } finally {
       setIsProcessing(false);
     }
+  };
+
+  const handleRefresh = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      await Promise.all([fetchEmployees(), fetchRepositories()]);
+      showNotification('Data refreshed successfully');
+    } catch (error) {
+      setError('Failed to refresh data');
+      console.error('Refresh error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddEmployee = async (newEmployee) => {
+    setIsProcessing(true);
+    try {
+      const addedEmployee = await addEmployee(newEmployee);
+      if (!addedEmployee) {
+        throw new Error('No response from add employee API');
+      }
+      
+      setEmployees(prevEmployees => [...prevEmployees, addedEmployee]);
+      setIsModalOpen(false);
+      showNotification('Employee added successfully');
+      
+      // Refresh to ensure data consistency
+      await fetchEmployees();
+    } catch (error) {
+      console.error('Add employee error:', error);
+      throw new Error("Failed to add employee. Please try again.");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
   };
 
   const filteredEmployees = employees.filter(employee =>
@@ -109,193 +219,219 @@ const EmployeeDashboard = () => {
     employee.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const paginatedEmployees = filteredEmployees.slice(
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage
+  );
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
-        <div className="flex items-center space-x-3 bg-white p-4 rounded-lg shadow-lg">
-          <FiLoader className="w-6 h-6 text-blue-600 animate-spin" />
-          <span className="text-gray-700 font-medium">Loading dashboard...</span>
-        </div>
-      </div>
+      <Box sx={{ width: '100%', mt: 2 }}>
+        <LinearProgress />
+      </Box>
     );
   }
 
   return (
-    <div className="min-h-screen w-full bg-gray-100 px-8 py-6">
-      <div className="container mx-auto bg-white rounded-lg shadow p-6">
+    <Container maxWidth="xl" sx={{ py: 4 }}>
+      <Paper sx={{ p: 4 }}>
         {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
-          <h1 className="text-2xl font-bold text-gray-800">
+        <Box sx={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center', 
+          mb: 4 
+        }}>
+          <Typography variant="h4" component="h1">
             Employee Management
-          </h1>
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="flex items-center px-6 py-2.5 bg-emerald-500 hover:bg-emerald-600
-            text-white font-medium rounded-lg transition-all duration-200 
-            disabled:opacity-50"
-            disabled={isProcessing}
-          >
-            <FiPlus className="w-5 h-5 mr-2" />
-            Add Employee
-          </button>
-        </div>
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <Tooltip title="Refresh data">
+              <IconButton 
+                onClick={handleRefresh}
+                disabled={isProcessing}
+                color="primary"
+              >
+                <RefreshIcon />
+              </IconButton>
+            </Tooltip>
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => setIsModalOpen(true)}
+              disabled={isProcessing}
+            >
+              Add Employee
+            </Button>
+          </Box>
+        </Box>
 
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-600 flex items-center justify-between">
-            <span>{error}</span>
-            <button onClick={() => setError(null)} className="text-red-400 hover:text-red-600">
-              ×
-            </button>
-          </div>
+          <Fade in={!!error}>
+            <Alert 
+              severity="error" 
+              onClose={() => setError(null)}
+              sx={{ mb: 3 }}
+            >
+              {error}
+            </Alert>
+          </Fade>
         )}
 
         {/* Controls */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          <div>
-            <select
-              value={selectedRepo}
-              onChange={(e) => setSelectedRepo(e.target.value)}
-              className="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 
-              focus:ring focus:ring-blue-200 transition-colors disabled:opacity-50"
-              disabled={isProcessing}
-            >
-              <option value="">Select Repository</option>
-              {repos.map((repo) => (
-                <option key={repo.id} value={repo.full_name}>
-                  {repo.full_name}
-                </option>
-              ))}
-            </select>
-          </div>
+        <Stack direction={{ xs: 'column', md: 'row' }} spacing={3} sx={{ mb: 4 }}>
+          <TextField
+            select
+            label="Select Repository"
+            value={selectedRepo}
+            onChange={(e) => setSelectedRepo(e.target.value)}
+            disabled={isProcessing}
+            sx={{ minWidth: 250 }}
+          >
+            <MenuItem value="">
+              <em>Select Repository</em>
+            </MenuItem>
+            {repos.map((repo) => (
+              <MenuItem key={repo.id} value={repo.full_name}>
+                {repo.full_name}
+              </MenuItem>
+            ))}
+          </TextField>
           
-          <div className="relative">
-            <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search by name or email..."
-              className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-lg 
-              focus:border-blue-500 focus:ring focus:ring-blue-200 transition-colors"
-              disabled={isProcessing}
-            />
-          </div>
-        </div>
+          <TextField
+            fullWidth
+            placeholder="Search by name or email..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            disabled={isProcessing}
+            InputProps={{
+              startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} />
+            }}
+          />
+        </Stack>
 
         {/* Table */}
-        <div className="relative overflow-x-auto shadow-md sm:rounded-lg border border-gray-200">
-          <table className="w-full text-sm text-left">
-            <thead className="text-xs uppercase bg-gray-50">
-              <tr>
-                <th scope="col" className="px-4 py-3">#</th>
-                <th scope="col" className="px-4 py-3">Name</th>
-                <th scope="col" className="px-4 py-3">Email</th>
-                <th scope="col" className="px-4 py-3">Platform</th>
-                <th scope="col" className="px-4 py-3">Status</th>
-                <th scope="col" className="px-4 py-3 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white">
-              {filteredEmployees.map((employee, index) => (
-                <tr 
+        <TableContainer component={Paper} variant="outlined" sx={{ mb: 3 }}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>#</TableCell>
+                <TableCell>Name</TableCell>
+                <TableCell>Email</TableCell>
+                <TableCell>Platform</TableCell>
+                <TableCell>Status</TableCell>
+                <TableCell align="right">Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {paginatedEmployees.map((employee, index) => (
+                <TableRow 
                   key={employee._id}
-                  className={`border-b hover:bg-gray-50 ${selectedEmployeeId === employee._id ? "bg-gray-50" : ""}`}
+                  selected={selectedEmployeeId === employee._id}
+                  hover
                 >
-                  <td className="px-4 py-3 text-gray-900">{index + 1}</td>
-                  <td className="px-4 py-3">
-                    <span className="font-medium text-gray-900">{employee.name}</span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className="text-green-600">{employee.email}</span>
-                  </td>
-                  <td className="px-4 py-3">
+                  <TableCell>{page * rowsPerPage + index + 1}</TableCell>
+                  <TableCell>
+                    <Typography variant="body1">{employee.name}</Typography>
+                  </TableCell>
+                  <TableCell>{employee.email}</TableCell>
+                  <TableCell>
                     {employee.platforms.map((platform) => (
-                      <div key={platform._id} className="flex items-center text-gray-500">
-                        <FiGithub className="w-4 h-4 mr-2" />
-                        <span className="font-medium text-gray-900">{platform.accountId}</span>
-                      </div>
+                      <Box key={platform._id} sx={{ display: 'flex', alignItems: 'center' }}>
+                        <GitHubIcon sx={{ mr: 1, fontSize: 18 }} />
+                        <Typography>{platform.accountId}</Typography>
+                      </Box>
                     ))}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={`inline-flex rounded-full px-2 py-1 text-xs font-medium
-                      ${employee.platforms[0]?.status === "active"
-                        ? "bg-green-100 text-green-800"
-                        : "bg-gray-100 text-gray-800"}`}
-                    >
-                      {employee.platforms[0]?.status || "N/A"}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <div className="flex justify-end gap-2">
-                      <button
+                  </TableCell>
+                  <TableCell>
+                    <Chip
+                      label={employee.platforms[0]?.status || "N/A"}
+                      color={employee.platforms[0]?.status === "active" ? "success" : "default"}
+                      size="small"
+                    />
+                  </TableCell>
+                  <TableCell align="right">
+                    <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
+                      <Button
+                        size="small"
+                        variant={selectedEmployeeId === employee._id ? "contained" : "outlined"}
                         onClick={() => setSelectedEmployeeId(employee._id)}
-                        className={`px-2 py-1 rounded text-xs font-medium transition-colors disabled:opacity-50
-                          ${selectedEmployeeId === employee._id
-                            ? "bg-blue-100 text-blue-700 hover:bg-blue-200"
-                            : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
                         disabled={isProcessing}
                       >
                         Select
-                      </button>
-                      <button
+                      </Button>
+                      <IconButton
+                        size="small"
+                        color="error"
                         onClick={() => handleDelete(employee._id)}
-                        className="px-2 py-1 rounded text-xs font-medium bg-red-50 text-red-600 
-                          hover:bg-red-100 transition-colors disabled:opacity-50"
                         disabled={isProcessing}
                       >
-                        <FiTrash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
+                        <DeleteIcon />
+                      </IconButton>
+                    </Box>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
-        </div>
+            </TableBody>
+          </Table>
+          <TablePagination
+            component="div"
+            count={filteredEmployees.length}
+            page={page}
+            onPageChange={handleChangePage}
+            rowsPerPage={rowsPerPage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+            rowsPerPageOptions={[5, 10, 25, 50]}
+          />
+        </TableContainer>
 
         {/* Collaborator Actions */}
         {selectedRepo && selectedEmployeeId && (
-          <div className="mt-6 flex justify-end gap-4">
-            <button
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
+            <Button
+              variant="contained"
+              color="success"
+              startIcon={<PersonAddIcon />}
               onClick={() => handleCollaboratorAction('add')}
-              className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg
-                hover:bg-green-700 transition-colors disabled:opacity-50"
               disabled={isProcessing}
             >
-              <FiUserPlus className="w-4 h-4 mr-2" />
               Add Collaborator
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="contained"
+              color="error"
+              startIcon={<PersonRemoveIcon />}
               onClick={() => handleCollaboratorAction('remove')}
-              className="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg
-                hover:bg-red-700 transition-colors disabled:opacity-50"
               disabled={isProcessing}
             >
-              <FiUserMinus className="w-4 h-4 mr-2" />
               Remove Collaborator
-            </button>
-          </div>
+            </Button>
+          </Box>
         )}
-      </div>
+      </Paper>
 
-      {isModalOpen && (
-        <AddUserModal 
-          onClose={() => setIsModalOpen(false)} 
-          onAdd={async (newEmployee) => {
-            setIsProcessing(true);
-            try {
-              const addedEmployee = await addEmployee(newEmployee);
-              setEmployees(prev => [...prev, addedEmployee]);
-              setIsModalOpen(false);
-            } catch (error) {
-              setError("Failed to add employee. Please try again.");
-            } finally {
-              setIsProcessing(false);
-            }
-          }} 
-        />
-      )}
-    </div>
+      {/* Add User Modal */}
+      <AddUserModal 
+        open={isModalOpen}
+        onClose={() => setIsModalOpen(false)} 
+        onAdd={handleAddEmployee}
+      />
+
+      {/* Snackbar for notifications */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+      >
+        <Alert 
+          onClose={() => setSnackbar({ ...snackbar, open: false })} 
+          severity={snackbar.severity}
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
+    </Container>
   );
 };
 

@@ -1,91 +1,318 @@
-// AddUserModal.js
-import React, { useState } from "react";
+import React, { useState, useCallback } from 'react';
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  TextField,
+  Box,
+  Typography,
+  IconButton,
+  InputAdornment,
+  Alert,
+  CircularProgress,
+  Divider,
+  Chip,
+  Stack
+} from '@mui/material';
+import {
+  Close as CloseIcon,
+  AccountCircle as AccountIcon,
+  Email as EmailIcon,
+  Add as AddIcon,
+  GitHub as GitHubIcon,
+  PersonAdd as PersonAddIcon
+} from '@mui/icons-material';
 
-const AddUserModal = ({ onClose, onAdd }) => {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [platforms, setPlatforms] = useState("");
+const AddUserModal = ({ open, onClose, onAdd }) => {
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    platforms: [{ platformName: 'GitHub', accountId: '' }]
+  });
+  
+  const [errors, setErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
 
-  const handleSubmit = (e) => {
+  const resetForm = useCallback(() => {
+    setFormData({
+      name: '',
+      email: '',
+      platforms: [{ platformName: 'GitHub', accountId: '' }]
+    });
+    setErrors({});
+    setSubmitError('');
+    setIsSubmitting(false);
+  }, []);
+
+  const validateForm = useCallback(() => {
+    const newErrors = {};
+    
+    // Validate name
+    if (!formData.name.trim()) {
+      newErrors.name = 'Name is required';
+    }
+
+    // Validate email
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email is required';
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = 'Invalid email format';
+    }
+    
+    // Validate platforms
+    formData.platforms.forEach((platform, index) => {
+      if (!platform.accountId.trim()) {
+        newErrors[`platform${index}`] = 'Account ID is required';
+      }
+    });
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  }, [formData]);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!validateForm()) return;
 
-    const platformsArray = platforms.split(",").map((platform) => {
-      const [platformName, accountId] = platform.trim().split(":");
-      return {
-        platformName: platformName.trim(),
-        accountId: accountId ? accountId.trim() : "",
-        status: "active",
+    setIsSubmitting(true);
+    setSubmitError('');
+
+    try {
+      const formattedData = {
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        platforms: formData.platforms.map(p => ({
+          ...p,
+          accountId: p.accountId.trim(),
+          status: 'active'
+        }))
       };
-    });
 
-    onAdd({
-      name,
-      email,
-      platforms: platformsArray,
-    });
+      await onAdd(formattedData);
+      handleClose();
+    } catch (error) {
+      setSubmitError(error.message || 'Failed to add user. Please try again.');
+      setIsSubmitting(false);
+    }
+  };
 
-    setName("");
-    setEmail("");
-    setPlatforms("");
+  const handleClose = () => {
+    resetForm();
     onClose();
   };
 
+  const handlePlatformChange = useCallback((index, value) => {
+    setFormData(prev => {
+      const newPlatforms = [...prev.platforms];
+      newPlatforms[index] = {
+        ...newPlatforms[index],
+        accountId: value
+      };
+      return {
+        ...prev,
+        platforms: newPlatforms
+      };
+    });
+
+    setErrors(prev => ({
+      ...prev,
+      [`platform${index}`]: ''
+    }));
+  }, []);
+
+  const addPlatform = useCallback(() => {
+    setFormData(prev => ({
+      ...prev,
+      platforms: [...prev.platforms, { platformName: 'GitHub', accountId: '' }]
+    }));
+  }, []);
+
+  const removePlatform = useCallback((index) => {
+    if (formData.platforms.length > 1) {
+      setFormData(prev => ({
+        ...prev,
+        platforms: prev.platforms.filter((_, i) => i !== index)
+      }));
+      
+      // Clean up any errors for the removed platform
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[`platform${index}`];
+        return newErrors;
+      });
+    }
+  }, [formData.platforms.length]);
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-      <div className="bg-white p-8 rounded-lg shadow-xl w-full max-w-lg">
-        <h2 className="text-2xl font-semibold mb-6 text-gray-800">Add New User</h2>
-        <form onSubmit={handleSubmit}>
-          <div className="mb-5">
-            <label className="block text-sm font-medium text-gray-600 mb-2">Name</label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full border border-gray-300 px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Enter full name"
-              required
+    <Dialog 
+      open={open} 
+      onClose={handleClose}
+      maxWidth="sm"
+      fullWidth
+      PaperProps={{
+        elevation: 0,
+        sx: {
+          borderRadius: 2,
+          maxWidth: 500
+        }
+      }}
+    >
+      <DialogTitle sx={{ 
+        m: 0, 
+        p: 2, 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'space-between',
+        bgcolor: 'background.paper' 
+      }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <PersonAddIcon sx={{ color: 'primary.main' }} />
+          <Typography variant="h6">Add New User</Typography>
+        </Box>
+        <IconButton 
+          onClick={handleClose}
+          disabled={isSubmitting}
+          sx={{ color: 'grey.500' }}
+        >
+          <CloseIcon />
+        </IconButton>
+      </DialogTitle>
+      
+      <Divider />
+      
+      <form onSubmit={handleSubmit}>
+        <DialogContent sx={{ pt: 3 }}>
+          {submitError && (
+            <Alert 
+              severity="error" 
+              sx={{ mb: 3 }}
+              onClose={() => setSubmitError('')}
+            >
+              {submitError}
+            </Alert>
+          )}
+          
+          <Stack spacing={3}>
+            <TextField
+              fullWidth
+              label="Full Name"
+              value={formData.name}
+              onChange={(e) => {
+                setFormData(prev => ({ ...prev, name: e.target.value }));
+                setErrors(prev => ({ ...prev, name: '' }));
+              }}
+              error={!!errors.name}
+              helperText={errors.name}
+              disabled={isSubmitting}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <AccountIcon />
+                  </InputAdornment>
+                ),
+              }}
             />
-          </div>
-          <div className="mb-5">
-            <label className="block text-sm font-medium text-gray-600 mb-2">Email</label>
-            <input
+            
+            <TextField
+              fullWidth
+              label="Email Address"
               type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full border border-gray-300 px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Enter email address"
-              required
+              value={formData.email}
+              onChange={(e) => {
+                setFormData(prev => ({ ...prev, email: e.target.value }));
+                setErrors(prev => ({ ...prev, email: '' }));
+              }}
+              error={!!errors.email}
+              helperText={errors.email}
+              disabled={isSubmitting}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <EmailIcon />
+                  </InputAdornment>
+                ),
+              }}
             />
-          </div>
-          <div className="mb-5">
-            <label className="block text-sm font-medium text-gray-600 mb-2">Platforms</label>
-            <input
-              type="text"
-              value={platforms}
-              onChange={(e) => setPlatforms(e.target.value)}
-              className="w-full border border-gray-300 px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="e.g., GitHub:johndoe, AWS:tej"
-              required
-            />
-          </div>
-          <div className="flex justify-end space-x-3">
-            <button
-              type="button"
-              className="bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400"
-              onClick={onClose}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-            >
-              Add
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+
+            <Box>
+              <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                Platform Accounts
+              </Typography>
+              <Stack spacing={2}>
+                {formData.platforms.map((platform, index) => (
+                  <Box 
+                    key={index}
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1
+                    }}
+                  >
+                    <Chip
+                      icon={<GitHubIcon />}
+                      label="GitHub"
+                      size="small"
+                      sx={{ minWidth: 100 }}
+                    />
+                    <TextField
+                      fullWidth
+                      size="small"
+                      placeholder="Enter GitHub username"
+                      value={platform.accountId}
+                      onChange={(e) => handlePlatformChange(index, e.target.value)}
+                      error={!!errors[`platform${index}`]}
+                      helperText={errors[`platform${index}`]}
+                      disabled={isSubmitting}
+                    />
+                    {formData.platforms.length > 1 && (
+                      <IconButton
+                        size="small"
+                        onClick={() => removePlatform(index)}
+                        disabled={isSubmitting}
+                      >
+                        <CloseIcon fontSize="small" />
+                      </IconButton>
+                    )}
+                  </Box>
+                ))}
+              </Stack>
+              
+              <Button
+                startIcon={<AddIcon />}
+                onClick={addPlatform}
+                sx={{ mt: 2 }}
+                disabled={isSubmitting}
+              >
+                Add Platform
+              </Button>
+            </Box>
+          </Stack>
+        </DialogContent>
+
+        <Divider />
+        
+        <DialogActions sx={{ px: 3, py: 2 }}>
+          <Button
+            onClick={handleClose}
+            disabled={isSubmitting}
+            color="inherit"
+          >
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            variant="contained"
+            disabled={isSubmitting}
+            startIcon={isSubmitting ? <CircularProgress size={20} /> : null}
+          >
+            Add User
+          </Button>
+        </DialogActions>
+      </form>
+    </Dialog>
   );
 };
 
