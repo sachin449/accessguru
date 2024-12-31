@@ -1,11 +1,16 @@
-import React from "react";
-import EmployeeDashboard from "./pages/EmployeeDashboard";
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import MainDashboard from './pages/MainDashboard';
+import EmployeeDashboard from './pages/EmployeeDashboard';
 
 function App() {
   return (
-    <div className="min-h-screen bg-gray-100">
-      <EmployeeDashboard />
-    </div>
+    <Router>
+      <Routes>
+        <Route path="/" element={<MainDashboard />} />
+        <Route path="/github" element={<EmployeeDashboard />} />
+      </Routes>
+    </Router>
   );
 }
 
