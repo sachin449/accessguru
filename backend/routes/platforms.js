@@ -4,7 +4,7 @@ import verifyToken from '../middleware/auth.js';
 
 const router = express.Router();
 
-// Protect all routes
+
 router.use(verifyToken);
 
 router.post('/', async (req, res) => {

@@ -5,10 +5,9 @@ import verifyToken from '../middleware/auth.js';
 
 const router = express.Router();
 
-// Protect all routes
+
 router.use(verifyToken);
 
-// Add Collaborator
 router.post('/add-collaborator', async (req, res) => {
   try {
     const { accountId, repoOwner, repoName, token } = req.body;

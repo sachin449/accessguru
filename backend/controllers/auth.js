@@ -1,4 +1,3 @@
-// controllers/auth.js
 import jwt from 'jsonwebtoken';
 import Admin from '../models/Admin.js';
 
@@ -63,7 +62,6 @@ export const logout = async (req, res) => {
   }
 };
 
-// Initialize admin if not exists
 export const initializeAdmin = async () => {
   try {
     const adminExists = await Admin.findOne({ email: process.env.ADMIN_EMAIL });

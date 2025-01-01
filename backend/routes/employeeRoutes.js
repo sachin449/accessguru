@@ -5,10 +5,10 @@ import verifyToken from '../middleware/auth.js';
 
 const router = express.Router();
 
-// All routes are protected
+
 router.use(verifyToken);
 
-// Get all employees
+
 router.get('/', async (req, res) => {
   try {
     const employees = await Employee.find();
@@ -33,7 +33,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Create new employee
+
 router.post('/', async (req, res) => {
   try {
     const { name, email, platforms } = req.body;
@@ -87,7 +87,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-// Update employee
+
 router.put('/:id', async (req, res) => {
   try {
     const { name, email, platforms } = req.body;
@@ -123,7 +123,6 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// Delete employee
 router.delete('/:id', async (req, res) => {
   try {
     const result = await Employee.findByIdAndDelete(req.params.id);

@@ -6,7 +6,7 @@ import { connectDB } from './config/db.js';
 import employeeRoutes from './routes/employeeRoutes.js';
 import platformRoutes from './routes/platforms.js';
 import accountRoutes from './routes/accounts.js'; 
-import authRoutes from './routes/auth.js';  // Add this line
+import authRoutes from './routes/auth.js';  
 
 dotenv.config();
 
@@ -16,10 +16,9 @@ app.use(cors());
 
 connectDB();
 await initializeAdmin();
-// Auth routes should come before protected routes
-app.use('/api/auth', authRoutes);  // Add this line
 
-// Protected routes
+app.use('/api/auth', authRoutes); 
+
 app.use('/api/employees', employeeRoutes);
 app.use('/api/platforms', platformRoutes);
 app.use('/api/accounts', accountRoutes);
