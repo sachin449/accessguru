@@ -1,4 +1,3 @@
-// src/pages/LoginPage.jsx
 import React, { useState } from 'react';
 import { 
   Box, 
@@ -48,11 +47,9 @@ const LoginPage = () => {
         throw new Error(data.message || 'Login failed');
       }
 
-      // Store tokens
       localStorage.setItem('accessToken', data.accessToken);
       localStorage.setItem('refreshToken', data.refreshToken);
 
-      // Redirect to dashboard
       navigate('/dashboard');
     } catch (err) {
       setError(err.message || 'An error occurred during login');

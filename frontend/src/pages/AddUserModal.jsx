@@ -50,19 +50,17 @@ const AddUserModal = ({ open, onClose, onAdd }) => {
   const validateForm = useCallback(() => {
     const newErrors = {};
     
-    // Validate name
     if (!formData.name.trim()) {
       newErrors.name = 'Name is required';
     }
 
-    // Validate email
-    if (!formData.email.trim()) {
+      if (!formData.email.trim()) {
       newErrors.email = 'Email is required';
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = 'Invalid email format';
     }
     
-    // Validate platforms
+    
     formData.platforms.forEach((platform, index) => {
       if (!platform.accountId.trim()) {
         newErrors[`platform${index}`] = 'Account ID is required';
@@ -137,7 +135,7 @@ const AddUserModal = ({ open, onClose, onAdd }) => {
         platforms: prev.platforms.filter((_, i) => i !== index)
       }));
       
-      // Clean up any errors for the removed platform
+    
       setErrors(prev => {
         const newErrors = { ...prev };
         delete newErrors[`platform${index}`];

@@ -69,7 +69,6 @@ const MainDashboard = () => {
       route: '/mongodb',
       status: 'Coming Soon'
     }
-    // ... other platforms remain same but add trend and status
   ];
 
   const filteredPlatforms = platforms.filter(platform =>
@@ -92,7 +91,6 @@ const MainDashboard = () => {
       pb: 6
     }}>
       <Container maxWidth="xl" sx={{ px: { xs: 2, sm: 3 } }}>
-        {/* Header Section */}
         <Box sx={{ 
           display: 'flex', 
           justifyContent: 'space-between', 
@@ -123,7 +121,6 @@ const MainDashboard = () => {
             </Typography>
           </Box>
 
-          {/* Search Bar */}
           <TextField
             size="small"
             variant="outlined"
@@ -152,7 +149,6 @@ const MainDashboard = () => {
           />
         </Box>
 
-        {/* Stats Overview */}
         <Grid container spacing={3} sx={{ mb: 4 }}>
           {[
             { 
@@ -221,7 +217,6 @@ const MainDashboard = () => {
           ))}
         </Grid>
 
-        {/* Platforms Grid */}
         <Grid container spacing={3}>
           {filteredPlatforms.map((platform) => (
             <Grid item xs={12} sm={6} md={4} key={platform.id}>

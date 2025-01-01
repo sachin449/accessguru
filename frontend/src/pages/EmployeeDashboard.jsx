@@ -42,7 +42,6 @@ import {
 const EmployeeDashboard = () => {
   const { token, orgName } = config.github;
   
-  // State management
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -191,14 +190,11 @@ const EmployeeDashboard = () => {
         throw new Error('No response from add employee API');
       }
       
-      // Update local state first
       setEmployees(prevEmployees => [...prevEmployees, addedEmployee.employee]);
       
-      // Close modal and show success message
       setIsModalOpen(false);
       showNotification('Employee added successfully');
       
-      // Optional: Refresh data in background
       fetchEmployees().catch(error => {
         console.error('Background refresh error:', error);
       });
@@ -283,7 +279,6 @@ const EmployeeDashboard = () => {
           </Fade>
         )}
 
-        {/* Controls */}
         <Stack direction={{ xs: 'column', md: 'row' }} spacing={3} sx={{ mb: 4 }}>
           <TextField
             select
@@ -315,7 +310,6 @@ const EmployeeDashboard = () => {
           />
         </Stack>
 
-        {/* Table */}
         <TableContainer component={Paper} variant="outlined" sx={{ mb: 3 }}>
           <Table>
             <TableHead>
@@ -390,7 +384,6 @@ const EmployeeDashboard = () => {
           />
         </TableContainer>
 
-        {/* Collaborator Actions */}
         {selectedRepo && selectedEmployeeId && (
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
             <Button
@@ -415,14 +408,12 @@ const EmployeeDashboard = () => {
         )}
       </Paper>
 
-      {/* Add User Modal */}
       <AddUserModal 
         open={isModalOpen}
         onClose={() => setIsModalOpen(false)} 
         onAdd={handleAddEmployee}
       />
 
-      {/* Snackbar for notifications */}
       <Snackbar
         open={snackbar.open}
         autoHideDuration={6000}
