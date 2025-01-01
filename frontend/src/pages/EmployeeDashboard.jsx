@@ -191,15 +191,20 @@ const EmployeeDashboard = () => {
         throw new Error('No response from add employee API');
       }
       
-      setEmployees(prevEmployees => [...prevEmployees, addedEmployee]);
+      // Update local state first
+      setEmployees(prevEmployees => [...prevEmployees, addedEmployee.employee]);
+      
+      // Close modal and show success message
       setIsModalOpen(false);
       showNotification('Employee added successfully');
       
-      // Refresh to ensure data consistency
-      await fetchEmployees();
+      // Optional: Refresh data in background
+      fetchEmployees().catch(error => {
+        console.error('Background refresh error:', error);
+      });
+      
     } catch (error) {
-      console.error('Add employee error:', error);
-      throw new Error("Failed to add employee. Please try again.");
+      showNotification(error.message || "Failed to add employee", 'error');
     } finally {
       setIsProcessing(false);
     }

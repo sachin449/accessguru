@@ -57,6 +57,18 @@ const MainDashboard = () => {
       route: '/mongodb',
       status: 'Coming Soon'
     },
+    {
+      id: 3,
+      name: 'AWS',
+      icon: <Cloud />,
+      description: 'Deployement and Database',
+      activeUsers: 32,
+      trend: '+8%',
+      bgColor: '#13aa52',
+      color: '#ffffff',
+      route: '/mongodb',
+      status: 'Coming Soon'
+    }
     // ... other platforms remain same but add trend and status
   ];
 

@@ -1,8 +1,12 @@
 import { Octokit } from '@octokit/rest';
 import express from 'express';
-import Platform from '../models/Platform.js'; 
+import Platform from '../models/Platform.js';
+import verifyToken from '../middleware/auth.js';
 
 const router = express.Router();
+
+// Protect all routes
+router.use(verifyToken);
 
 // Add Collaborator
 router.post('/add-collaborator', async (req, res) => {
@@ -30,7 +34,6 @@ router.post('/add-collaborator', async (req, res) => {
   }
 });
 
-
 router.delete('/remove-collaborator', async (req, res) => {
   try {
     const { accountId, repoOwner, repoName, token } = req.body;
@@ -55,4 +58,4 @@ router.delete('/remove-collaborator', async (req, res) => {
   }
 });
 
-export default router; 
+export default router;

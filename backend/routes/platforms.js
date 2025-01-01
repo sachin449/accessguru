@@ -1,8 +1,11 @@
 import express from 'express';
 import Platform from '../models/Platform.js';
+import verifyToken from '../middleware/auth.js';
 
 const router = express.Router();
 
+// Protect all routes
+router.use(verifyToken);
 
 router.post('/', async (req, res) => {
   try {

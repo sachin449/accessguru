@@ -1,9 +1,39 @@
 import express from 'express';
-import axios from 'axios'; 
+import axios from 'axios';
 import Employee from '../models/Employee.js';
+import verifyToken from '../middleware/auth.js';
 
 const router = express.Router();
 
+// All routes are protected
+router.use(verifyToken);
+
+// Get all employees
+router.get('/', async (req, res) => {
+  try {
+    const employees = await Employee.find();
+    
+    const formattedEmployees = employees.map((employee) => {
+      const formattedEmployee = employee.toObject();
+      formattedEmployee._id = formattedEmployee._id.toString();
+
+      if (formattedEmployee.platforms) {
+        formattedEmployee.platforms = formattedEmployee.platforms.map((platform) => {
+          platform._id = platform._id.toString();
+          return platform;
+        });
+      }
+
+      return formattedEmployee;
+    });
+
+    res.status(200).json(formattedEmployees);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Create new employee
 router.post('/', async (req, res) => {
   try {
     const { name, email, platforms } = req.body;
@@ -21,7 +51,6 @@ router.post('/', async (req, res) => {
       }
 
       if (platform.platformName === 'GitHub') {
-       
         const githubApiUrl = `https://api.github.com/users/${platform.accountId}`;
         try {
           await axios.get(githubApiUrl);
@@ -45,7 +74,11 @@ router.post('/', async (req, res) => {
       });
     }
 
-    const employee = new Employee({ name, email, platforms: validatedPlatforms });
+    const employee = new Employee({
+      name,
+      email,
+      platforms: validatedPlatforms
+    });
     await employee.save();
 
     res.status(201).json({ message: 'Employee added successfully.', employee });
@@ -54,37 +87,10 @@ router.post('/', async (req, res) => {
   }
 });
 
-
-router.get('/', async (req, res) => {
-  try {
-    const employees = await Employee.find();
-
-   
-    const formattedEmployees = employees.map((employee) => {
-      const formattedEmployee = employee.toObject();
-      formattedEmployee._id = formattedEmployee._id.toString();
-
-      if (formattedEmployee.platforms) {
-        formattedEmployee.platforms = formattedEmployee.platforms.map((platform) => {
-          platform._id = platform._id.toString();
-          return platform;
-        });
-      }
-
-      return formattedEmployee;
-    });
-
-    res.status(200).json(formattedEmployees);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-});
-
-
+// Update employee
 router.put('/:id', async (req, res) => {
   try {
     const { name, email, platforms } = req.body;
-
 
     const validatedPlatforms = platforms.map((platform) => {
       if (!platform.platformName || !platform.accountId) {
@@ -99,7 +105,11 @@ router.put('/:id', async (req, res) => {
 
     const employee = await Employee.findByIdAndUpdate(
       req.params.id,
-      { name, email, platforms: validatedPlatforms },
+      {
+        name,
+        email,
+        platforms: validatedPlatforms
+      },
       { new: true }
     );
 
@@ -113,11 +123,11 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-
+// Delete employee
 router.delete('/:id', async (req, res) => {
   try {
     const result = await Employee.findByIdAndDelete(req.params.id);
-    
+
     if (!result) {
       return res.status(404).json({ message: 'Employee not found.' });
     }

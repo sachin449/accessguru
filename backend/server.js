@@ -1,14 +1,12 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
+import { initializeAdmin } from './controllers/auth.js';
 import { connectDB } from './config/db.js';
 import employeeRoutes from './routes/employeeRoutes.js';
 import platformRoutes from './routes/platforms.js';
 import accountRoutes from './routes/accounts.js'; 
-import mongoDBAccountRoutes from './routes/mongoDBAccounts.js';
-import mongoDBTestRoutes from './routes/mongoDBTest.js';
-
-
+import authRoutes from './routes/auth.js';  // Add this line
 
 dotenv.config();
 
@@ -16,14 +14,16 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
-
 connectDB();
+await initializeAdmin();
+// Auth routes should come before protected routes
+app.use('/api/auth', authRoutes);  // Add this line
 
+// Protected routes
 app.use('/api/employees', employeeRoutes);
 app.use('/api/platforms', platformRoutes);
 app.use('/api/accounts', accountRoutes);
-app.use('/api/mongodb', mongoDBAccountRoutes);
-app.use('/api/mongodb-test', mongoDBTestRoutes);
+
 
 const PORT = process.env.PORT || 5000;
 
